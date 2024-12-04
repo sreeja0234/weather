@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Report</title>
+    <link rel="stylesheet" href="weather.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    </head>
+
+<body>
+
+        <div class="container">
+            <h1>Weather Report</h1>
+            <input type="text" id="cityInput" placeholder="Enter city name">
+            <button onclick="fetchTodayWeather()">Today's Weather</button>
+            <div id="result" class="result"></div>
+            </div>
+            <div>
+            <div id="forecast" class="forecast"></div>
+            </div>
+        
+        
+</body>
+    
+
+    <script>
+        async function fetchTodayWeather() {
+            const city = document.getElementById('cityInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            const forecastDiv = document.getElementById('forecast');
+            
+            resultDiv.innerHTML = "";
+            forecastDiv.innerHTML = "";
+        
+            if (!city) {
+                return resultDiv.innerHTML = "<p style='color: #ffcccc;'>Please enter a city name.</p>";
+            }
+        
+            const apiKey = "545bf5571723e4424d5f45d9cda07dab"; 
+            const apiUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
+        
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("City not found or invalid API key");
+                const weatherData = await response.json();
+        
+                // Display current weather
+                const { name } = weatherData.city;
+                const { main: { temp, humidity }, weather, wind: { speed } } = weatherData.list[0];
+                const currentWeatherIcon = `http://openweathermap.org/img/wn/${weather[0].icon}@2x.png`;
+               
+        
+                resultDiv.innerHTML = `
+                    
+                    <img src="${currentWeatherIcon}" alt="${weather[0].description}" style="width: 150px; height: 150px;">
+                      <h1>${name}</h1>
+                    <p><strong>Temperature:</strong> ${temp}°C</p>
+                    <p><strong>Condition:</strong> ${weather[0].description}</p>
+                    <p><strong>Humidity:</strong> ${humidity}%</p>
+                    <p><strong>Wind Speed:</strong> ${speed} m/s</p>
+                    <button id="forecastButton" style="margin-top: 10px;  color: #333;background: rgba(255, 255, 255, 0.9);">3-Days Forecast</button>
+                `;
+                document.getElementById("forecastButton").addEventListener("click", () => {
+                    fetch3DayForecast(weatherData);
+                });
+        
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: #ffcccc;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function fetch3DayForecast(weatherData) {
+            const forecastDiv = document.getElementById('forecast');
+            forecastDiv.innerHTML = ""; 
+        
+            const forecastData = weatherData.list.filter((item, index) => index % 8 === 0).slice(1, 4);
+            forecastData.forEach(forecast => {
+                const forecastDate = new Date(forecast.dt * 1000);
+                const forecastDay = forecastDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
+                const forecastIcon = `http://openweathermap.org/img/wn/${forecast.weather[0].icon}@2x.png`;
+        
+                forecastDiv.innerHTML += `
+                    <div class="forecast-day">
+                        <h3>${forecastDay}</h3>
+                        <img src="${forecastIcon}" alt="${forecast.weather[0].description}" title="${forecast.weather[0].description}" " style="width: 150px; height: 150px;">
+                        <div class="forecast-detail">
+                            <img src="icons/temperature.png" alt="Temperature Icon" title="Temperature">
+                            <span><strong>Temp:</strong> ${forecast.main.temp}°C</span>
+                        </div>
+                        <div class="forecast-detail">
+                            <img src="icons/condition.jpg" alt="Condition Icon" title="Condition">
+                            <span><strong>Condition:</strong> ${forecast.weather[0].description}</span>
+                        </div>
+                        <div class="forecast-detail">
+                            <img src="icons/wind.png" alt="Wind Icon" title="Wind">
+                            <span><strong>Wind:</strong> ${forecast.wind.speed} m/s</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+    </script>
+</body>
+</html>
